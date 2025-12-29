@@ -1,0 +1,11 @@
+pandas==2.1.4
+numpy==1.26.3
+scikit-learn==1.3.2
+xgboost
+joblib
+mlflow
+pytest==7.4.4
+fastapi
+uvicorn
+pydantic
+python-multipart
