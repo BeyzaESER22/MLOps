@@ -156,5 +156,15 @@ if __name__ == "__main__":
         pipeline.run_classification_experiments()
         pipeline.run_reframing_experiment()
 
-        if len(pipeline.results) == 0:
+        if not pipeline.results:
             raise RuntimeError("No models were trained successfully")
+
+        best_model = max(pipeline.results, key=lambda x: x["Accuracy"])
+        mlflow.set_tag("best_model", best_model["Model"])
+
+        print("\nEXPERIMENT RESULTS REPORT")
+        print(pipeline.get_results_table())
+        print("\nTraining completed successfully.")
+
+    except Exception as e:
+        print(f"Critical Error: {e}")
