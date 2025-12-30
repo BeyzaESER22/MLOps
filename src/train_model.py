@@ -135,9 +135,7 @@ if __name__ == "__main__":
     try:
         raw_df = load_data(DATA_PATH)
         clean_df = clean_data(raw_df)
-
         balanced_df = balance_data(clean_df)
-
         df_crossed = apply_feature_cross(balanced_df)
 
         if 'Student_ID' in df_crossed.columns:
@@ -146,8 +144,8 @@ if __name__ == "__main__":
             final_df = df_crossed
 
         object_cols = final_df.select_dtypes(include=['object']).columns
-
         le = LabelEncoder()
+
         for col in object_cols:
             if col != 'target' and 'hashed' not in col:
                 final_df[col] = le.fit_transform(final_df[col].astype(str))
@@ -158,18 +156,5 @@ if __name__ == "__main__":
         pipeline.run_classification_experiments()
         pipeline.run_reframing_experiment()
 
-        print("\nEXPERIMENT RESULTS REPORT")
-        print(pipeline.get_results_table())
-        print("\nModels saved to 'checkpoints/' directory.")
-
-    except Exception as e:
-        print(f"Critical Error: {e}")
-        
-    best_model = max(self.results, key=lambda x: x["Accuracy"])
-    mlflow.set_tag("best_model", best_model["Model"])
-    
-    if len(pipeline.results) == 0:
-    raise RuntimeError("No models were trained successfully")
-
-
-
+        if len(pipeline.results) == 0:
+            raise RuntimeError("No models were trained successfully")
