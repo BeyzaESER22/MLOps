@@ -32,10 +32,10 @@ jobs:
       run: |
         python -m py_compile src/app.py
         python -m py_compile src/train_model.py
-        echo "✅ Kodlarda sözdizimi hatası yok."
+      
 
     # 5. Docker Testi
     - name: Build Docker Image
       run: |
         docker build -t mlops-project:latest .
-        echo "✅ Docker imajı başarıyla oluşturuldu."
+  
