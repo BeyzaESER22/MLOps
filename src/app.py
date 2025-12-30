@@ -57,34 +57,41 @@ def home():
 def predict(data: PredictionInput):
     if not model:
         raise HTTPException(status_code=503, detail="Model servisi çalışmıyor.")
-    
+
     try:
-        # 1. Boş bir DataFrame oluştur (Tüm sütunlar 0 olsun)
+        # 1. Boş bir DataFrame oluştur (tüm sütunlar 0)
         input_df = pd.DataFrame(0, index=[0], columns=EXPECTED_COLUMNS)
-        
-        # 2. Kullanıcıdan gelen verileri ilk sütunlara yerleştir (Demo amaçlı)
-        # Gelen veriyi güvenli bir şekilde yerleştirelim
-        user_data = data.features[0] if isinstance(data.features[0], list) else data.features
-        
-        # Kullanıcı verisi kadar sütunu doldur, kalanı 0 kalsın
+
+        # 2. Kullanıcıdan gelen veriyi al
+        user_data = (
+            data.features[0]
+            if isinstance(data.features[0], list)
+            else data.features
+        )
+
+        # 3. Gelen veriyi güvenli şekilde yerleştir
         limit = min(len(user_data), len(EXPECTED_COLUMNS))
         for i in range(limit):
-            col_name = EXPECTED_COLUMNS[i]
-            input_df[col_name] = user_data[i]
-            
-        # 3. Tahmin Yap (Artık sütun isimleri ve sayısı tutuyor!)
-        prediction = model.predict(input_df)
-        
-        try:
-    prediction = model.predict(input_df)
-    return {
-        "prediction": prediction.tolist(),
-        "model": "production"
-    }
-except Exception:
-    prediction = fallback_model.predict(input_df)
-    return {
-        "prediction": prediction.tolist(),
-        "model": "fallback"
-    }
+            input_df[EXPECTED_COLUMNS[i]] = user_data[i]
 
+        # 4. Önce production model ile dene
+        try:
+            prediction = model.predict(input_df)
+            return {
+                "prediction": prediction.tolist(),
+                "model": "production"
+            }
+
+        # 5. Hata olursa fallback modele geç
+        except Exception:
+            prediction = fallback_model.predict(input_df)
+            return {
+                "prediction": prediction.tolist(),
+                "model": "fallback"
+            }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tahmin sırasında hata oluştu: {str(e)}"
+        )
