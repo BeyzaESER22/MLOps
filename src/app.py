@@ -1,21 +1,31 @@
-import joblib
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import mlflow.pyfunc
+import os
+from sklearn.dummy import DummyClassifier
 
-app = FastAPI(title="MLOps Prediction Service")
 
-# Model Yükleme
-model_path = "/app/models/model.pkl"
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "file:///app/mlruns")
+mlflow.set_tracking_uri(tracking_uri)
+
 model = None
 
 try:
-    print(f"🔄 Model yükleniyor: {model_path} ...")
-    model = joblib.load(model_path)
-    print("✅ Model başarıyla yüklendi!")
+    print("Model yüklenmeye başladı")
+    model = mlflow.pyfunc.load_model(
+        model_uri="models:/CourseCompletionModel/Production"
+    )
+    print("Model yüklendi")
 except Exception as e:
-    print(f"❌ HATA: Model yüklenemedi. Detay: {e}")
+    print(f"Model yüklenemedi: {e}")
+
+
+# Fallback model
+fallback_model = DummyClassifier(strategy="most_frequent")
+fallback_model.fit([[0]], [0])
+
 
 # Modelin beklediği KESİN sütun listesi (Hata mesajından alındı)
 EXPECTED_COLUMNS = [
@@ -65,6 +75,16 @@ def predict(data: PredictionInput):
         # 3. Tahmin Yap (Artık sütun isimleri ve sayısı tutuyor!)
         prediction = model.predict(input_df)
         
-        return {"prediction": prediction.tolist()}
-    except Exception as e:
-        return {"error": f"Tahmin hatası: {str(e)}"}
+        try:
+    prediction = model.predict(input_df)
+    return {
+        "prediction": prediction.tolist(),
+        "model": "production"
+    }
+except Exception:
+    prediction = fallback_model.predict(input_df)
+    return {
+        "prediction": prediction.tolist(),
+        "model": "fallback"
+    }
+
